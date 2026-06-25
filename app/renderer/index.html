@@ -8,15 +8,75 @@
   <title>CompanionAI</title>
   <style>
     body {
-      background-color: #111111;
+      background-color: transparent;
       margin: 0;
       padding: 0;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
     }
+    #character-container{
+    position:absolute;
+
+    right:0px;
+    bottom:20px;
+
+    width:240px;
+    height:320px;
+}
+   #baymax{
+
+    position:absolute;
+
+    bottom:0;
+    left:50%;
+
+    width:220px;
+    height:auto;
+
+    transform:translateX(-50%);
+    transform-origin:center bottom;
+
+    animation:breathe 4s ease-in-out infinite;
+
+    user-select:none;
+    pointer-events:none;
+}
+
+      @keyframes breathe{
+
+    0%{
+        translate:0 0;
+        scale:1;
+    }
+
+    50%{
+        translate:0 -3px;
+        scale:1.01;
+    }
+
+    100%{
+        translate:0 0;
+        scale:1;
+    }
+
+}
   </style>
 </head>
-<body>
-</body>
+
+
+    <body>
+
+    <div id="character-container">
+
+        <img
+            id="baymax"
+            src="../assets/characters/baymax/idle_open.png"
+            alt="Baymax">
+
+    </div>
+    <script src="./js/baymax.js"></script>
+    </body>
+
+
 </html>

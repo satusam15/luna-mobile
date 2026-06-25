@@ -3,14 +3,14 @@ const path = require('path');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 1200,
+   width: 1200,
     height: 800,
+
     center: true,
     resizable: true,
-    backgroundColor: '#111111',
-    transparent: false,
+    transparent: true,
     frame: false,
-    alwaysOnTop: false,
+    alwaysOnTop: true,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -20,7 +20,12 @@ function createWindow() {
 
   // Load the blank HTML entry file
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-}
+  // Allow mouse clicks to pass through the window
+  mainWindow.setIgnoreMouseEvents(true, {
+      forward: true
+  });
+  mainWindow.setAlwaysOnTop(true, 'screen-saver');
+  }
 
 app.whenReady().then(() => {
   createWindow();

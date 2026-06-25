@@ -9,7 +9,7 @@ function createWindow() {
     resizable: true,
     backgroundColor: '#111111',
     transparent: false,
-    frame: true,
+    frame: false,
     alwaysOnTop: false,
     webPreferences: {
       contextIsolation: true,

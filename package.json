@@ -1,0 +1,14 @@
+{
+  "name": "companion-ai",
+  "version": "1.0.0",
+  "description": "CompanionAI application",
+  "main": "app/electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "package": "echo \"Error: packaging not configured yet\" && exit 1"
+  },
+  "devDependencies": {
+    "electron": "^42.5.0"
+  }
+}

@@ -1,0 +1,33 @@
+# Secrets - never commit these
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Node / Electron
+node_modules/
+package-lock.json
+
+# Runtime-generated files - created fresh each run, not part of the repo
+backend/speech.wav
+backend/screenshot.png
+backend/baymax_voice.wav
+backend/baymax_voice_edge.mp3
+backend/baymax_voice_gemini.wav
+backend/baymax_voice_fish.mp3
+backend/state/message.json
+
+# Persistent data that's user-specific, not project source
+backend/memory/facts.json
+backend/planner/reminders.json
+
+# Leftover mismatched asset from an early experiment - not used anywhere
+backend/../app/assets/characters/baymax/idle_closed.png
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+*.log

@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <!-- Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta
+http-equiv="Content-Security-Policy"
+content="
+default-src 'self';
+script-src 'self';
+style-src 'self' 'unsafe-inline';
+connect-src 'self' ws://localhost:8765;
+">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CompanionAI</title>
   <style>
@@ -37,11 +44,110 @@
     transform:translateX(-50%);
     transform-origin:center bottom;
 
-    animation:breathe 4s ease-in-out infinite;
+    /* animation:breathe 4s ease-in-out infinite; */ /* breathing disabled */
 
     user-select:none;
     pointer-events:none;
 }
+#speech-bubble{
+
+    position:absolute;
+
+    right:170px;
+    bottom:190px;
+
+    max-width:320px;
+
+    padding:16px 22px;
+
+    background:rgba(255,255,255,.96);
+
+    color:#222;
+
+    border-radius:22px;
+
+    font-family:"Segoe UI",sans-serif;
+    font-size:15px;
+    line-height:1.5;
+
+    box-shadow:
+        0 8px 30px rgba(0,0,0,.18);
+
+    opacity:0;
+
+    transform:
+        translateY(10px)
+        scale(.95);
+
+    transition:
+        opacity .3s ease,
+        transform .3s ease;
+
+    pointer-events:none;
+
+    z-index:999;
+}
+#speech-bubble.show{
+
+    opacity:1;
+
+    transform:
+        translateY(0)
+        scale(1);
+
+}
+#speech-bubble::after{
+
+    content:"";
+
+    position:absolute;
+
+    right:36px;
+
+    bottom:-12px;
+
+    width:18px;
+    height:18px;
+
+    background:white;
+
+    transform:rotate(45deg);
+
+}
+#baymax.talking{
+
+    animation:
+
+        talkPulse .5s ease-in-out infinite;
+
+}
+      @keyframes talkPulse{
+
+          0%{
+
+              transform:
+                  translateX(-50%)
+                  scale(1);
+
+          }
+
+          50%{
+
+              transform:
+                  translateX(-50%)
+                  scale(1.03);
+
+          }
+
+          100%{
+
+              transform:
+                  translateX(-50%)
+                  scale(1);
+
+          }
+
+      }
 
       @keyframes breathe{
 
@@ -61,18 +167,105 @@
     }
 
 }
+
+    #eyes{
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        z-index:2;
+    }
+
+    .eye{
+        position:absolute;
+
+        width:19.2px;
+        height:18.8px;
+        /* Measured via connected-component analysis of the actual glow
+           pixels in idle_open.png: left eye bbox 89x88px, right eye bbox
+           91x88px out of the 1029x1528 source - a near-perfect circle,
+           very slightly wider than tall. Scaled to the 220px display width. */
+
+        border-radius:50%;
+
+        background:radial-gradient(circle, #d4faff 0%, #6fd8ff 45%, #2fb8ff 75%, transparent 100%);
+        box-shadow:0 0 14px 4px rgba(79,212,255,.85);
+
+        transform:translate(-50%, -50%);
+    }
+
+    /* Positions computed from the same pixel analysis, then mapped into
+       #eyes' coordinate space (#eyes uses inset:0 and matches the
+       240x320 #character-container, NOT the 220x326.7 image box - the
+       220px-wide, bottom-aligned, horizontally-centered image only
+       covers part of that container, so the eye centers were projected
+       through that image->container mapping rather than used as raw
+       image percentages). Verified by compositing the resized source
+       image into a simulated container and confirming these circles
+       land on the baked-in eye glow. */
+    .eye-left{  left:39.00%; top:27.68%; }
+    .eye-right{ left:59.76%; top:27.68%; }
+
+    .eye.blink{
+        animation:eyeBlink .18s ease-in-out;
+    }
+
+    @keyframes eyeBlink{
+        0%{   transform:translate(-50%, -50%) scaleY(1); }
+        45%{  transform:translate(-50%, -50%) scaleY(0.08); }
+        55%{  transform:translate(-50%, -50%) scaleY(0.08); }
+        100%{ transform:translate(-50%, -50%) scaleY(1); }
+    }
+
+    /* Pipeline-reactive states */
+    #eyes.state-listening .eye{
+        background:radial-gradient(circle, #d4ffe0 0%, #33d17a 60%, transparent 100%);
+        box-shadow:0 0 10px 3px rgba(51,209,122,.8);
+    }
+
+    #eyes.state-thinking .eye,
+    #eyes.state-speaking .eye{
+        animation:eyePulse 1s ease-in-out infinite;
+    }
+
+    #eyes.state-looking .eye{
+        background:radial-gradient(circle, #fff3c4 0%, #f5b942 60%, transparent 100%);
+        box-shadow:0 0 10px 3px rgba(245,185,66,.8);
+        animation:eyePulse .7s ease-in-out infinite;
+    }
+
+    #eyes.state-interrupted .eye{
+        animation:eyeFlash .25s ease-in-out;
+    }
+
+    @keyframes eyePulse{
+        0%,100%{ opacity:1; }
+        50%{ opacity:.35; }
+    }
+
+    @keyframes eyeFlash{
+        0%{   filter:brightness(1); }
+        50%{  filter:brightness(2.2); }
+        100%{ filter:brightness(1); }
+    }
   </style>
 </head>
 
 
     <body>
-
+      <div id="speech-bubble">
+    Hello!
+</div>  
     <div id="character-container">
 
         <img
             id="baymax"
             src="../assets/characters/baymax/idle_open.png"
             alt="Baymax">
+
+        <div id="eyes">
+            <span class="eye eye-left"></span>
+            <span class="eye eye-right"></span>
+        </div>
 
     </div>
     <script src="./js/baymax.js"></script>

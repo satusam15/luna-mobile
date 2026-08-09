@@ -20,7 +20,10 @@ function createWindow() {
 
   // Load the blank HTML entry file
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-  // Allow mouse clicks to pass through the window
+  // mainWindow.webContents.openDevTools();
+
+
+  // // Allow mouse clicks to pass through the window
   mainWindow.setIgnoreMouseEvents(true, {
       forward: true
   });

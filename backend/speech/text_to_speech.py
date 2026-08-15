@@ -1,25 +1,17 @@
 import os
-import time
 import wave
 import asyncio
 
 import requests
-import pygame
-import numpy as np
-import sounddevice as sd
 import edge_tts
 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from speech.microphone import DEVICE
 
 load_dotenv()
 
 MAX_INPUT_CHARS = 200  # Orpheus hard limit
-
-INTERRUPT_SAMPLE_RATE = 16000
-INTERRUPT_MIN_SPEECH_MS = 250
 
 
 class TextToSpeech:
@@ -40,8 +32,6 @@ class TextToSpeech:
         self.gemini_client = genai.Client(api_key=gemini_key) if gemini_key else None
         self.gemini_tts_model = "gemini-2.5-flash-preview-tts"
         self.gemini_voice = "Kore"  # female Gemini voice - others: Aoede, Leda, Zephyr
-
-        pygame.mixer.init()
 
     # ---------------- Layer 2: Fish Audio (free, no cap, but slower) ----------------
     def _generate_fish(self, text):
@@ -171,59 +161,3 @@ class TextToSpeech:
             print(f"⚠️ edge-tts unavailable ({e}), switching to Gemini TTS...")
 
         return self._generate_gemini(text)
-
-    def speak(self, text, interrupt_threshold=None):
-
-        audio_path = self.generate(text)
-
-        pygame.mixer.music.load(audio_path)
-        pygame.mixer.music.play()
-
-        if interrupt_threshold is not None:
-            interrupted = self._play_with_interrupt_watch(interrupt_threshold)
-        else:
-            interrupted = False
-            while pygame.mixer.music.get_busy():
-                time.sleep(0.1)
-
-        pygame.mixer.music.unload()
-        os.remove(audio_path)
-
-        return interrupted
-
-    def _play_with_interrupt_watch(self, threshold):
-
-        interrupted = False
-        speech_ms_accumulated = 0
-
-        def callback(indata, frames, time_info, status):
-            nonlocal interrupted, speech_ms_accumulated
-
-            rms = np.sqrt(np.mean(indata.astype(np.float32) ** 2))
-
-            if rms >= threshold:
-                speech_ms_accumulated += (frames / INTERRUPT_SAMPLE_RATE) * 1000
-                if speech_ms_accumulated >= INTERRUPT_MIN_SPEECH_MS:
-                    interrupted = True
-                    pygame.mixer.music.stop()
-                    raise sd.CallbackStop
-            else:
-                speech_ms_accumulated = 0
-
-        try:
-            with sd.InputStream(
-                samplerate=INTERRUPT_SAMPLE_RATE,
-                channels=1,
-                dtype="int16",
-                device=DEVICE,
-                callback=callback
-            ):
-                while pygame.mixer.music.get_busy() and not interrupted:
-                    time.sleep(0.05)
-        except sd.CallbackStop:
-            pass
-
-        if interrupted:
-            print("🛑 Interrupted - listening now...")
-
-        return interrupted

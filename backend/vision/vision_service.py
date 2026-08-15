@@ -9,28 +9,33 @@ from groq import Groq
 load_dotenv()
 
 PROMPT = """
-You are Baymax's visual perception system.
+You are Luna's eyes - the user just showed you something through their camera
+(a notebook page, textbook, whiteboard, screen, object, or scene) and asked
+about it.
 
-Analyze this desktop screenshot.
+Look closely and describe what you see in enough detail that someone who
+can't see the image could still help with it. This means:
 
-Return ONLY valid JSON.
+- If there's a math problem, equation, code snippet, or diagram: transcribe
+  it as accurately as you can, exactly as written (symbols, numbers, variable
+  names, indentation for code).
+- If there's handwritten or printed text: transcribe the relevant text.
+- If it's a general scene/object (not text-based): describe what's there and
+  anything notable about it.
+- Note anything that looks like an error, a mistake, or something the user
+  might need help with.
 
-Format:
+Return ONLY valid JSON in this format:
 
 {
-    "application": "",
-    "activity": "",
-    "visible_error": false,
-    "needs_attention": false,
     "summary": ""
 }
 
-Rules:
+The "summary" field should contain everything above as one clear, thorough
+description - this is the only thing that gets passed along, so don't leave
+out details that might matter for answering the user's question.
 
-- Do not explain.
-- Do not solve problems.
-- Only observe.
-- Output ONLY JSON.
+Do not add commentary outside the JSON. Output ONLY the JSON object.
 """
 
 
@@ -48,9 +53,19 @@ class VisionService:
         with open(image_path, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
 
+    def _mime_for(self, image_path):
+        ext = image_path.rsplit(".", 1)[-1].lower()
+        return {
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "png": "image/png",
+            "webp": "image/webp",
+        }.get(ext, "image/jpeg")
+
     def describe(self, image_path, retries=2):
 
         image_b64 = self._encode_image(image_path)
+        mime = self._mime_for(image_path)
         last_error = None
 
         for attempt in range(retries + 1):
@@ -65,7 +80,7 @@ class VisionService:
                                 {
                                     "type": "image_url",
                                     "image_url": {
-                                        "url": f"data:image/png;base64,{image_b64}"
+                                        "url": f"data:{mime};base64,{image_b64}"
                                     }
                                 }
                             ]

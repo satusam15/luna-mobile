@@ -13,6 +13,35 @@ load_dotenv()
 
 MAX_TOOL_ROUNDS = 3  # safety cap so a tool-call loop can't run forever
 
+VALID_EMOTIONS = [
+    "normal", "happy", "sad", "angry", "surprised",
+    "curious", "sleepy", "love", "confused", "playful"
+]
+
+EMOTION_TAG_RE = re.compile(r"^\s*[\[\(]\s*(\w+)\s*[\]\)]\s*", re.IGNORECASE)
+
+# Backup keyword sniffing for when the model forgets the bracket tag entirely -
+# keeps expressions matching the reply's tone even if formatting slips.
+EMOTION_KEYWORDS = {
+    "happy": ["glad", "great", "wonderful", "awesome", "nice!", "love that", "yay", "congrat"],
+    "sad": ["sorry to hear", "that's rough", "unfortunate", "sad", "i'm sorry"],
+    "angry": ["frustrating", "ridiculous", "annoying", "unacceptable"],
+    "surprised": ["whoa", "wow", "really?", "no way", "seriously?", "didn't expect"],
+    "curious": ["what do you mean", "tell me more", "curious", "why is that", "how come"],
+    "sleepy": ["tired", "sleepy", "yawn", "late", "get some rest"],
+    "love": ["love you", "sweet of you", "that's so kind"],
+    "confused": ["not sure i follow", "confused", "what do you mean by", "unclear"],
+    "playful": ["haha", "lol", "just kidding", "teasing", "😉"],
+}
+
+
+def _guess_emotion_from_text(text):
+    lowered = text.lower()
+    for emotion, keywords in EMOTION_KEYWORDS.items():
+        if any(kw in lowered for kw in keywords):
+            return emotion
+    return "normal"
+
 
 def _clean_for_speech(text):
     """
@@ -32,6 +61,32 @@ def _clean_for_speech(text):
     text = re.sub(r"\s+", " ", text).strip()             # collapse newlines/extra spaces
 
     return text
+
+
+def _extract_emotion(text):
+    """
+    Pulls a leading [emotion] tag off the reply, e.g. '[happy] Sure thing!'
+    Returns (clean_text_without_tag, emotion). Defaults to 'normal' if the
+    model forgot the tag or used something outside VALID_EMOTIONS.
+    """
+    if not text:
+        return text, "normal"
+
+    match = EMOTION_TAG_RE.match(text)
+    if not match:
+        # Model forgot the tag entirely - guess from the reply's wording
+        # instead of always defaulting to normal.
+        return text, _guess_emotion_from_text(text)
+
+    tag = match.group(1).lower()
+    remainder = text[match.end():].strip()
+
+    if tag not in VALID_EMOTIONS:
+        # Tag present but not one of ours (model invented one) - still try
+        # a keyword guess on the remaining text rather than giving up.
+        return remainder, _guess_emotion_from_text(remainder)
+
+    return remainder, tag
 
 
 class GroqService:
@@ -99,6 +154,22 @@ a single speech bubble, NOT read as text on a page. Because of this:
   a missing parenthesis, a mismatched argument, or tts not being imported" -
   not a list.
 - Speak naturally. Avoid long paragraphs.
+
+EMOTION TAG - REQUIRED ON EVERY REPLY:
+Before your actual reply, prepend exactly one emotion tag in square brackets,
+chosen from this list only: [normal] [happy] [sad] [angry] [surprised]
+[curious] [sleepy] [love] [confused] [playful]
+
+Pick whichever genuinely matches the tone of what you're about to say - e.g.
+[happy] for good news or warm moments, [curious] when asking a follow-up,
+[confused] if you're unsure what the user meant, [surprised] for unexpected
+info, [playful] for jokes/teasing, [normal] for plain factual replies.
+
+Format exactly like this, nothing else before it:
+[happy] That's wonderful, I'm glad it worked out!
+
+Do not explain the tag, do not mention it exists, just include it as the very
+first thing in your reply, every single time, with no exceptions.
 """
 
     def _run_tool_calls(self, tool_calls):
@@ -131,6 +202,11 @@ a single speech bubble, NOT read as text on a page. Because of this:
         return results
 
     def respond(self, observation):
+        """
+        Returns a tuple: (reply_text, emotion)
+        emotion is one of VALID_EMOTIONS, defaulting to 'normal' if the
+        model didn't include a valid tag.
+        """
 
         self.history.append({"role": "user", "content": str(observation)})
 
@@ -155,13 +231,14 @@ a single speech bubble, NOT read as text on a page. Because of this:
                 continue
 
             # No more tool calls - this is the final natural-language reply
-            reply = _clean_for_speech(message.content)
+            raw_reply = _clean_for_speech(message.content)
+            reply, emotion = _extract_emotion(raw_reply)
 
-            self.history.append({"role": "assistant", "content": reply})
+            self.history.append({"role": "assistant", "content": raw_reply})
             if len(self.history) > 10:
                 self.history = self.history[-10:]
 
-            return reply
+            return reply, emotion
 
         # Safety fallback if it somehow never stops calling tools
-        return "I got a bit tangled up thinking that through - could you say that again?"
+        return "I got a bit tangled up thinking that through - could you say that again?", "confused"

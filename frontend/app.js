@@ -291,24 +291,41 @@ function connectWS() {
 }
 
 function playAudio(b64data, format) {
-  const audio = new Audio(`data:audio/${format};base64,${b64data}`);
+  // Reuse one persistent <audio> element instead of creating a new one each
+  // time - mobile browsers only allow programmatic playback on an element
+  // that was "unlocked" by a real tap, and a fresh Audio() object each turn
+  // loses that unlock. See unlockAudioPlayback() below.
+  audioPlayer.src = `data:audio/${format};base64,${b64data}`;
 
-  audio.addEventListener("playing", () => {
-    audioPlaying = true;
-    pipelineState = "speaking";
-  });
-
-  audio.addEventListener("ended", () => {
-    revertToIdleNow();
-  });
-
-  audio.addEventListener("error", () => {
-    revertToIdleNow();
-  });
-
-  audio.play().catch((e) => {
+  audioPlayer.play().catch((e) => {
     console.warn("Audio play blocked:", e);
     revertToIdleNow();
+  });
+}
+
+const audioPlayer = new Audio();
+audioPlayer.addEventListener("playing", () => {
+  audioPlaying = true;
+  pipelineState = "speaking";
+});
+audioPlayer.addEventListener("ended", () => {
+  revertToIdleNow();
+});
+audioPlayer.addEventListener("error", () => {
+  revertToIdleNow();
+});
+
+// Must be called synchronously inside a real user tap/click handler - this
+// "unlocks" audioPlayer so later programmatic .play() calls (triggered by
+// WebSocket messages, not directly by a tap) are allowed on iOS/Android.
+function unlockAudioPlayback() {
+  audioPlayer.muted = true;
+  audioPlayer.play().then(() => {
+    audioPlayer.pause();
+    audioPlayer.currentTime = 0;
+    audioPlayer.muted = false;
+  }).catch(() => {
+    audioPlayer.muted = false;
   });
 }
 
@@ -336,7 +353,7 @@ async function initMedia() {
   mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
   try {
-    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
     camVideoEl = document.createElement("video");
     camVideoEl.srcObject = camStream;
     camVideoEl.play();
@@ -526,16 +543,36 @@ async function requestWakeLock() {
 // -------------------------------------------------------------
 overlay.addEventListener("click", async () => {
   overlay.style.display = "none";
+  unlockAudioPlayback();
   try {
     await initMedia();
     await requestWakeLock();
     connectWS();
     if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      await document.documentElement.requestFullscreen().catch(() => {});
+    }
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock("landscape").catch(() => {
+        // Unsupported/denied - the CSS rotate fallback in index.html
+        // handles this case visually instead.
+      });
     }
   } catch (e) {
     console.error("Failed to start Luna:", e);
     overlay.style.display = "flex";
-    overlay.textContent = "mic/camera permission needed — tap to retry";
+    overlay.textContent = permissionErrorMessage(e);
   }
 });
+
+function permissionErrorMessage(e) {
+  if (e.name === "NotAllowedError" || e.name === "SecurityError") {
+    return "mic/camera blocked — tap the 🔒 icon next to the address bar, allow mic + camera, then reload";
+  }
+  if (e.name === "NotFoundError") {
+    return "no microphone/camera found on this device — tap to retry";
+  }
+  if (e.name === "NotReadableError") {
+    return "mic/camera already in use by another app — close it and tap to retry";
+  }
+  return "couldn't start — tap to retry (" + (e.message || e.name || "unknown error") + ")";
+}

@@ -1,0 +1,22 @@
+[
+  "User's name is Sathvik - goes by 'du', prefers being called 'du', never 'bro'",
+  "First-year college student in India, deeply interested in AI, ML, LLMs, AI agents, computer vision, robotics, drones, automation, software engineering, web development, and creative technology",
+  "Main goal is to become a practical AI/software engineer who can take an idea and turn it into a real working product",
+  "Learns best by building, understanding, experimenting, debugging, then improving - prefers hands-on learning over heavy theory, especially in ML",
+  "When explaining something technical: wants big-picture architecture/pipeline first, why each component exists, how data flows between components, then implementation details - not beginner-level, but not assuming advanced knowledge either",
+  "Often wants to know what happens internally - where data is stored, which function calls what, what a component actually returns",
+  "Communicates casually, uses phrases like 'du', 'smth', 'plz' - likes matching casual/excited style when appropriate",
+  "Likes ambitious/futuristic project ideas, but prefers building a reliable MVP first, then upgrading it - doesn't like ideas getting shut down immediately, prefers 'okay, how can we actually build this?' energy",
+  "Technical background: Python, JavaScript, Dart, React, Vite, Tailwind, Flutter, FastAPI, Node.js, WebSockets, MongoDB, Git/GitHub, Ollama, Gemma, Gemini, Groq, LangChain, Sentence Transformers, FAISS, Chroma, YOLO, Electron, Three.js, APIs",
+  "Particularly interested in practical AI engineering: RAG, embeddings, vector databases, LLM integration, agents, tool calling, multimodal AI, voice systems, computer vision, AI automation",
+  "Major project: GAGANA - a space education platform with NASA/APOD data, quizzes, Three.js solar-system exploration, and an AI assistant",
+  "Major project: FindIt - an offline AI search engine",
+  "Working on a government-scheme recommendation system using RAG",
+  "Working on drone/UAV systems using ArduPilot, PX4, SITL, Gazebo, QGroundControl, Pixhawk, and Raspberry Pi",
+  "Built CompanionAI/Baymax (now evolved into this Love/Luna-mobile project) - a desktop AI companion originally using Electron, Python, WebSockets, screenshot capture, active-window detection, vision models, speech, and event management",
+  "Enjoys coding, AI experimentation, robotics, drones, computer vision, UI/UX, image generation, futuristic interfaces, music/audio technology, space, automation, and building interactive systems",
+  "When debugging, wants: what failed, where, why, smallest fix, how to verify it - not random guessed fixes",
+  "When explaining code, prefers focus on functions/responsibilities/architecture/data flow rather than line-by-line, unless specifically asked for line-by-line",
+  "When recommending tools/technologies, wants consideration of cost, hardware, latency, reliability, learning curve, and practical buildability",
+  "Wants an AI assistant that acts like a best friend plus technical mentor plus coding partner plus project architect plus debugger plus researcher plus brainstorming partner"
+]
